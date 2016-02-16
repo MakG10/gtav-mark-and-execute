@@ -21,6 +21,7 @@ int FetchKey();
 int FetchKeyUp();
 
 bool IsKeyCombinationDown(std::string humanReadableKey);
+bool IsKeyCombinationJustUp(std::string humanReadableKey);
 void PressKeyCombination(std::vector<int> keys);
 void PressKeyCombination(std::vector<std::string> humanReadableKeys);
 void PressKey(std::string humanReadableKey);
@@ -28,3 +29,6 @@ void PressKey(std::string humanReadableKey);
 std::vector<std::string> SplitKeyCombination(std::string humanReadableKey);
 DWORD str2key(std::string humanReadableKey);
 std::string key2str(DWORD key);
+
+bool IsControllerButtonPressed(int button);
+bool IsControllerButtonJustPressed(int button);

@@ -1,6 +1,6 @@
 #pragma once
 
-#include <Windows.h>
+#include <windows.h>
 #include "natives.h"
 #include "types.h"
 #include "enums.h"
@@ -15,19 +15,16 @@ public:
 	Any customCam;
 	DWORD time = 0;
 	bool firstRun = true;
+	bool isAboutToKill = false;
 	
 	explicit KillCam(Ped* playerPed, Ped* targetPed, Any* camera);
+	explicit KillCam();
+	virtual ~KillCam();
+
 	virtual bool play();
 	virtual Any getCustomCam();
+	virtual void killHeadsUp();
 };
-
-class RandomKillCam : public KillCam
-{
-public:
-	using KillCam::KillCam;
-	bool play();
-};
-
 
 class SimpleKillCam : public KillCam
 {
@@ -40,10 +37,21 @@ private:
 };
 
 
+class SimpleFastKillCam : public KillCam
+{
+public:
+	explicit SimpleFastKillCam(Ped* playerPed, Ped* targetPed, Any* camera) : KillCam(playerPed, targetPed, camera) { }
+	bool play();
+
+private:
+	bool isDead = false;
+};
+
 class CloseUpKillCam : public KillCam
 {
 public:
 	explicit CloseUpKillCam(Ped* playerPed, Ped* targetPed, Any* camera) : KillCam(playerPed, targetPed, camera) { }
+	~CloseUpKillCam();
 	bool play();
 	Any getCustomCam();
 

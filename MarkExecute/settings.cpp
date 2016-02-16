@@ -30,19 +30,28 @@ map<string, map<string, string> > Settings::load(string filename)
 	struct stat buffer;
 	if (stat(this->filename.c_str(), &buffer) == 0)
 	{
-		read_ini(filename, this->propertyTree);
-
 		try
 		{
+			read_ini(filename, this->propertyTree);
+
 			for (auto& section : this->propertyTree)
 			{
-// 					this->options[section.first] = new map<string, string>;
-					
 				for (auto& option : section.second)
-					this->options[section.first][option.first] = option.second.get_value<std::string>();
+				{
+					string optionValue = option.second.get_value_optional<string>().get_value_or("NULL");
+
+					if (optionValue != "NULL")
+					{
+						this->options[section.first][option.first] = optionValue;
+					}
+				}
 			}
-		} catch(...) {
+		} catch(std::exception const &e) {
+			return this->options;
 			// Pusta sekcja
+		} catch (...) {
+			return this->options;
+			//
 		}
 	}
 		

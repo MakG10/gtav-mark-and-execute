@@ -5,6 +5,7 @@
 #include "main.h"
 #include "script.h"
 #include "keyboard.h"
+#include "utils.h"
 
 BOOL APIENTRY DllMain(HMODULE hInstance, DWORD reason, LPVOID lpReserved)
 {
@@ -15,6 +16,7 @@ BOOL APIENTRY DllMain(HMODULE hInstance, DWORD reason, LPVOID lpReserved)
 		keyboardHandlerRegister(OnKeyboardMessage);
 		break;
 	case DLL_PROCESS_DETACH:
+		ShutdownEyeX();
 		scriptUnregister(hInstance);
 		keyboardHandlerUnregister(OnKeyboardMessage);
 		break;

@@ -9,13 +9,20 @@
 		  http://www.gta-mods.pl
 */
 
+#include <windows.h>
 #include <map>
 #include <vector>
 #include <string>
 #include <sstream>
+#include <Xinput.h>
 
 #include "keyboard.h"
 #include "natives.h"
+
+// XINPUT
+int xinputControllerID = -1;
+XINPUT_STATE xinputState;
+//
 
 const int KEYS_SIZE = 255;
 const int NOW_PERIOD = 100, MAX_DOWN = 5000; // ms
@@ -26,6 +33,13 @@ struct {
 	BOOL wasDownBefore;
 	BOOL isUpNow;
 } keyStates[KEYS_SIZE];
+
+struct
+{
+	DWORD time;
+	BOOL wasDownBefore;
+	BOOL isUpNow;
+} buttonStates[32768];
 
 int lastKeyPress = -1;
 
@@ -102,6 +116,21 @@ bool IsKeyCombinationDown(std::string humanReadableKey)
 	}
 
 	return allPressed;
+}
+
+bool IsKeyCombinationJustUp(std::string humanReadableKey)
+{
+	std::vector<std::string> keys = SplitKeyCombination(humanReadableKey);
+
+	for (auto &key : keys)
+	{
+		if (IsKeyJustUp(str2key(key)))
+		{
+			return true;
+		}
+	}
+
+	return false;
 }
 
 void PressKeyCombination(std::vector<int> keys)
@@ -278,7 +307,11 @@ DWORD str2key(std::string humanReadableKey)
 	keymap["["] = VK_OEM_4;
 	keymap["]"] = VK_OEM_6;
 	keymap["\\"] = VK_OEM_5;
-	
+
+	if (keymap.find(humanReadableKey) != keymap.end())
+	{
+		return keymap[humanReadableKey];
+	}
 
 	if (humanReadableKey.length() == 1)
 	{
@@ -289,22 +322,18 @@ DWORD str2key(std::string humanReadableKey)
 			return (int)letter;
 		}
 	}
-	else if (humanReadableKey.length() == 2 || humanReadableKey.length() == 3)
+
+	if (humanReadableKey.length() == 2 || humanReadableKey.length() == 3)
 	{
 		try {
 			int key = std::stoi(humanReadableKey);
 			return key;
-		} catch (const std::invalid_argument& e) {
-			// go on
+		} catch (...) {
+			return -1;
 		}
 	}
 
-	if(keymap.find(humanReadableKey) != keymap.end())
-	{
-		return keymap[humanReadableKey];
-	} else {
-		return -1;
-	}
+	return -1;
 }
 
 std::string key2str(DWORD key)
@@ -421,23 +450,67 @@ std::string key2str(DWORD key)
 	keymap[VK_OEM_5] = "\\";
 	
 
-	if ((key >= 0x30 && key <= 0x39) || (key >= 0x41 && key <= 0x5A))
+	try
 	{
-		char letter = (int)key;
-		std::string humanReadableKey = std::string(1, letter);
-		
-		return humanReadableKey;
+		if ((key >= 0x30 && key <= 0x39) || (key >= 0x41 && key <= 0x5A))
+		{
+			char letter = (int)key;
+			std::string humanReadableKey = std::string(1, letter);
+
+			return humanReadableKey;
+		}
+
+		if (keymap.find(key) != keymap.end())
+		{
+			return keymap[key];
+		} else
+		{
+			std::stringstream sstream;
+			sstream << std::hex << key;
+			std::string result = sstream.str();
+			for (auto & c : result) c = toupper(c);
+
+			return "0x" + result;
+		}
+	} catch (...)
+	{
+		return std::to_string(key);
+	}
+}
+
+void getControllerState()
+{
+	if (xinputControllerID == -1)
+	{
+		for (DWORD i = 0; i < XUSER_MAX_COUNT && xinputControllerID == -1; i++)
+		{
+			ZeroMemory(&xinputState, sizeof(XINPUT_STATE));
+
+			if (XInputGetState(i, &xinputState) == ERROR_SUCCESS)
+				xinputControllerID = i;
+		}
+
+		xinputControllerID = 0;
 	}
 
-	if(keymap.find(key) != keymap.end())
-	{
-		return keymap[key];
-	} else {
-		std::stringstream sstream;
-		sstream << std::hex << key;
-		std::string result = sstream.str();
-		for (auto & c : result) c = toupper(c);
+	XInputGetState(xinputControllerID, &xinputState);
+}
 
-		return "0x" + result;
+bool IsControllerButtonPressed(int button)
+{
+	getControllerState();
+
+	if (buttonStates[button].isUpNow != (xinputState.Gamepad.wButtons & button))
+	{
+		buttonStates[button].time = GetTickCount();
 	}
+
+	buttonStates[button].isUpNow = xinputState.Gamepad.wButtons & button;
+	
+	return buttonStates[button].isUpNow;
+}
+
+bool IsControllerButtonJustPressed(int button)
+{
+	return IsControllerButtonPressed(button) && GetTickCount() < buttonStates[button].time + NOW_PERIOD;
 }

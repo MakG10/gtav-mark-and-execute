@@ -8,7 +8,7 @@
 
 #include "main.h"
 
-#include "menuv/item.h"
+#include <menuv/item.h>
 
 void MarkAndExecuteMain();
 void main();
@@ -16,6 +16,9 @@ void createMenu();
 
 int parseTargetsLimit(std::string limit);
 void markTargetPed(Entity target);
+void unmarkTargetPed(Entity target);
+bool isPedMarked(Entity ped);
+bool getScreenCoords(Vector3* coords);
 
 int getReloadDelay(Hash weaponHash);
 void reloadWeapon();
